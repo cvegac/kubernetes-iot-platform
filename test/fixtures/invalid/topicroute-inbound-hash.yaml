@@ -1,0 +1,11 @@
+# expect: routes towards the edge cannot use '#'
+# Una ruta cloud -> edge con '#' le mandaría al gateway todo el tráfico del cloud.
+apiVersion: iot.cvegac.github.io/v1alpha1
+kind: TopicRoute
+metadata:
+  name: fixture-inbound-hash
+  namespace: iot-system
+spec:
+  gateway: iot-edge
+  topic: commands/#
+  direction: in

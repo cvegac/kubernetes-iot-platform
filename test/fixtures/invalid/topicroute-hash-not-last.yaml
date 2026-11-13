@@ -1,0 +1,11 @@
+# expect: spec.topic in body should match
+# En MQTT '#' solo puede ser el último nivel.
+apiVersion: iot.cvegac.github.io/v1alpha1
+kind: TopicRoute
+metadata:
+  name: fixture-hash-not-last
+  namespace: iot-system
+spec:
+  gateway: iot-edge
+  topic: sensors/#/temperature
+  direction: out

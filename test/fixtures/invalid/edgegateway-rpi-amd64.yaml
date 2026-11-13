@@ -1,0 +1,12 @@
+# expect: a raspberry-pi gateway must be arm64
+apiVersion: iot.cvegac.github.io/v1alpha1
+kind: EdgeGateway
+metadata:
+  name: fixture-rpi-amd64
+  namespace: iot-system
+spec:
+  cluster: rpi-casa
+  hardware: raspberry-pi
+  arch: amd64
+  uplink:
+    host: mqtt.example.net

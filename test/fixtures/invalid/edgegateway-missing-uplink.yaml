@@ -1,0 +1,9 @@
+# expect: spec.uplink: Required value
+apiVersion: iot.cvegac.github.io/v1alpha1
+kind: EdgeGateway
+metadata:
+  name: fixture-no-uplink
+  namespace: iot-system
+spec:
+  cluster: iot-edge
+  hardware: kind

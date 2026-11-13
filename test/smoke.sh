@@ -96,6 +96,56 @@ check "Argo CD: broker en cloud Synced/Healthy" app_healthy mqtt-cloud
 check "Argo CD: broker en edge (ApplicationSet) Synced/Healthy" app_healthy mqtt-iot-edge
 check "mensaje publicado en edge llega al cloud por el bridge" edge_to_cloud_message
 
+API_GROUP="iot.cvegac.github.io"
+FIXTURES="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fixtures"
+
+crds_established() {
+  kubectl --context "$CLOUD" wait --for=condition=Established --timeout=120s \
+    "crd/edgegateways.${API_GROUP}" "crd/topicroutes.${API_GROUP}"
+}
+
+registry_points_to_edge() {
+  # El EdgeGateway del registro tiene que nombrar al cluster que Argo CD conoce como edge.
+  [ "$(kubectl --context "$CLOUD" -n iot-system get edgegateway iot-edge -o jsonpath='{.spec.cluster}')" = iot-edge ]
+}
+
+# Server-side dry-run: valida contra el schema y las reglas CEL del API server sin persistir nada.
+accepted() {
+  kubectl --context "$CLOUD" apply --dry-run=server -f "$1"
+}
+
+expected_error() {
+  sed -n 's/^# expect: //p' "$1"
+}
+
+rejected() {
+  local file="$1" expect out
+  expect="$(expected_error "$file")"
+  [ -n "$expect" ] || return 1
+  out="$(kubectl --context "$CLOUD" apply --dry-run=server -f "$file" 2>&1)" && return 1
+  grep -qF -- "$expect" <<<"$out"
+}
+
+route_gateway_immutable() {
+  local out
+  out="$(kubectl --context "$CLOUD" -n iot-system patch topicroute sensors-telemetry --type merge \
+    -p '{"spec":{"gateway":"otro-gateway"}}' --dry-run=server 2>&1)" && return 1
+  grep -qF "gateway is immutable" <<<"$out"
+}
+
+echo
+echo "== Hito 3: API propia (CRDs EdgeGateway y TopicRoute)"
+check "CRDs Established" crds_established
+check "Argo CD: iot-api Synced/Healthy" app_healthy iot-api
+check "registro: EdgeGateway iot-edge apunta al cluster iot-edge" registry_points_to_edge
+for f in "$FIXTURES"/valid/*.yaml; do
+  check "acepta $(basename "$f")" accepted "$f"
+done
+for f in "$FIXTURES"/invalid/*.yaml; do
+  check "rechaza $(basename "$f") -> \"$(expected_error "$f")\"" rejected "$f"
+done
+check "rechaza cambiar el gateway de una TopicRoute existente" route_gateway_immutable
+
 echo
 if [ "$failures" -gt 0 ]; then
   echo "${failures} check(s) fallaron"
