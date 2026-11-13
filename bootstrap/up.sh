@@ -53,6 +53,9 @@ kubectl --context "kind-${CLOUD}" -n argocd create secret generic "cluster-${EDG
     argocd.argoproj.io/secret-type=cluster tier=edge |
   kubectl --context "kind-${CLOUD}" apply -f -
 
+echo "==> App-of-apps (desde acá Argo CD despliega todo lo demás desde git)"
+kubectl --context "kind-${CLOUD}" apply -f "${ROOT}/gitops/argocd/root-app.yaml"
+
 cat <<EOF
 
 Listo. Contextos: kind-${CLOUD}, kind-${EDGE}

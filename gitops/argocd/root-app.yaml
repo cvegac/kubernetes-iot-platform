@@ -1,3 +1,4 @@
+# App-of-apps: Argo CD lee gitops/apps y crea desde ahí todas las demás Applications/ApplicationSets.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -6,9 +7,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/cvegac/kubernetes-iot-platform.git # Placeholder, user needs to update this
-    targetRevision: HEAD
-    path: gitops/argocd/applications
+    repoURL: https://github.com/cvegac/kubernetes-iot-platform.git
+    targetRevision: feat/multi-cluster # pasa a main al mergear
+    path: gitops/apps
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

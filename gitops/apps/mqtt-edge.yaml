@@ -1,0 +1,33 @@
+# Un broker por cada gateway edge: cualquier cluster registrado en Argo CD con label tier=edge
+# recibe su Application automáticamente. Sumar un edge = registrar el cluster, nada más.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: mqtt-edge
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            tier: edge
+  template:
+    metadata:
+      name: "mqtt-{{.name}}"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/cvegac/kubernetes-iot-platform.git
+        targetRevision: feat/multi-cluster # pasa a main al mergear
+        path: workloads/mqtt-broker/overlays/edge
+      destination:
+        server: "{{.server}}"
+        namespace: mqtt
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mqtt-cloud
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/cvegac/kubernetes-iot-platform.git
+    targetRevision: feat/multi-cluster # pasa a main al mergear
+    path: workloads/mqtt-broker/overlays/cloud
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mqtt
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

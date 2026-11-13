@@ -1,9 +1,0 @@
-prometheus:
-  server:
-    enabled: false # Disable full server
-  agent:
-    enabled: true
-    nodeSelector:
-      node-role.kubernetes.io/edge: ""
-    remoteWrite:
-      - url: "http://cloud-thanos-receive.default.svc.cluster.local:19291/api/v1/receive" # Placeholder URL

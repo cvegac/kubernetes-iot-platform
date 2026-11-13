@@ -1,7 +1,0 @@
-apiVersion: v2
-name: edge-connectivity
-description: A Helm chart for Edge Connectivity (Bridge, Sync)
-type: application
-version: 0.1.0
-appVersion: "1.0.0"
-# This might just contain ConfigMaps or Secrets for connectivity

@@ -63,6 +63,39 @@ check "cloud: Argo CD disponible" argocd_ready
 check "edge registrado en Argo CD (tier=edge)" edge_registered
 check "API del edge alcanzable desde un pod del cloud" edge_reachable_from_cloud
 
+MQTT_IMAGE="eclipse-mosquitto:2.1.2-alpine"
+
+app_healthy() {
+  local app="$1"
+  kubectl --context "$CLOUD" -n argocd wait "application/${app}" \
+    --for=jsonpath='{.status.sync.status}'=Synced --timeout=300s &&
+    kubectl --context "$CLOUD" -n argocd wait "application/${app}" \
+      --for=jsonpath='{.status.health.status}'=Healthy --timeout=300s
+}
+
+edge_to_cloud_message() {
+  # Camino de un ESP32 real: publica en el broker del edge y el bridge lo reenvía al broker del cloud.
+  local msg="temp=21.5 id=$RANDOM"
+  kubectl --context "$CLOUD" delete pod smoke-sub --ignore-not-found >/dev/null
+  kubectl --context "$CLOUD" run smoke-sub --restart=Never --image="$MQTT_IMAGE" --command -- \
+    mosquitto_sub -h mqtt.mqtt.svc -t 'sensors/#' -C 1 -W 60 >/dev/null
+  kubectl --context "$CLOUD" wait pod smoke-sub --for=condition=Ready --timeout=120s >/dev/null || return 1
+  run_pod "$EDGE" smoke-pub "$MQTT_IMAGE" \
+    mosquitto_pub -h mqtt.mqtt.svc -t sensors/esp32-01/temperature -m "$msg" -q 1 >/dev/null
+  kubectl --context "$CLOUD" wait pod smoke-sub --for=jsonpath='{.status.phase}'=Succeeded --timeout=90s >/dev/null
+  local got
+  got=$(kubectl --context "$CLOUD" logs smoke-sub)
+  kubectl --context "$CLOUD" delete pod smoke-sub --wait=false >/dev/null
+  [ "$got" = "$msg" ]
+}
+
+echo
+echo "== Hito 2: GitOps y MQTT edge -> cloud"
+check "Argo CD: root-app Synced/Healthy" app_healthy root-app
+check "Argo CD: broker en cloud Synced/Healthy" app_healthy mqtt-cloud
+check "Argo CD: broker en edge (ApplicationSet) Synced/Healthy" app_healthy mqtt-iot-edge
+check "mensaje publicado en edge llega al cloud por el bridge" edge_to_cloud_message
+
 echo
 if [ "$failures" -gt 0 ]; then
   echo "${failures} check(s) fallaron"
