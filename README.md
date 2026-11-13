@@ -73,14 +73,19 @@ kubectl --context kind-iot-cloud -n argocd port-forward svc/argocd-server 8080:8
 kubectl --context kind-iot-cloud -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d
 ```
 
-> **Windows / Docker Desktop (WSL2):** since Kubernetes 1.35 the kubelet refuses to start on cgroup v1, and the
-> WSL2 5.15 kernel still mounts it by default. Add this to `%UserProfile%\.wslconfig`, run `wsl --shutdown` and
-> restart Docker Desktop. `docker info --format '{{.CgroupVersion}}'` must print `2` (`up.sh` checks it).
+> **Windows / Docker Desktop (WSL2):** since Kubernetes 1.35 the kubelet refuses to start on cgroup v1, and older
+> WSL2 kernels still mount it. Update WSL first: on the 5.15 kernel, forcing cgroup v2 makes Docker Desktop's
+> engine restart in a loop. Tested with WSL 3.0.5 (kernel 6.18).
 >
-> ```ini
-> [wsl2]
-> kernelCommandLine = cgroup_no_v1=all
-> ```
+> 1. Quit Docker Desktop, then in an admin terminal: `wsl --shutdown` and `wsl --update --web-download`.
+> 2. Add this to `%UserProfile%\.wslconfig`:
+>
+>    ```ini
+>    [wsl2]
+>    kernelCommandLine = cgroup_no_v1=all
+>    ```
+>
+> 3. Start Docker Desktop. `docker info --format '{{.CgroupVersion}}'` must print `2` (`up.sh` checks it).
 
 ## Platform API
 
