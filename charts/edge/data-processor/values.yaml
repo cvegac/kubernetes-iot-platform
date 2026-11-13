@@ -1,0 +1,32 @@
+vector:
+  role: Agent
+  nodeSelector:
+    node-role.kubernetes.io/edge: ""
+  customConfig:
+    data_dir: "/var/lib/vector"
+    sources:
+      mqtt_source:
+        type: mqtt
+        url: tcp://mosquitto:1883
+        topics: ["sensors/#"]
+    transforms:
+      process_data:
+        type: remap
+        inputs: ["mqtt_source"]
+        source: |
+          . = parse_json!(.message)
+    sinks:
+      local_buffer:
+        type: file
+        inputs: ["process_data"]
+        path: "/var/lib/vector/buffer.log"
+        encoding:
+          codec: ndjson
+      # Batch sync to cloud would be another sink, configured later
+
+ekuiper:
+  # eKuiper configuration
+  persistence:
+    enabled: true
+  nodeSelector:
+    node-role.kubernetes.io/edge: ""

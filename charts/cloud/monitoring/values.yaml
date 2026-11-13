@@ -1,0 +1,19 @@
+kube-prometheus-stack:
+  grafana:
+    enabled: true
+    service:
+      type: NodePort # For local access
+  prometheus:
+    enabled: true # We might want to disable this if we only use Thanos for global view, but keeping it for local cloud metrics
+    prometheusSpec:
+      enableRemoteWriteReceiver: true # Allow Edge Prometheus to write here (or to Thanos Receive)
+
+thanos:
+  receive:
+    enabled: true
+    service:
+      type: LoadBalancer # Expose for Edge to push data
+  query:
+    enabled: true
+  storegateway:
+    enabled: true

@@ -1,0 +1,10 @@
+mosquitto:
+  service:
+    type: NodePort
+    nodePort: 31883
+  persistence:
+    enabled: true
+    size: 100Mi
+  nodeSelector:
+    node-role.kubernetes.io/edge: ""
+

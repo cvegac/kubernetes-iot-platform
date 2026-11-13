@@ -1,0 +1,10 @@
+apiVersion: v2
+name: edge-monitoring
+description: A Helm chart for Edge Monitoring (Prometheus Agent)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+dependencies:
+  - name: prometheus
+    version: 19.0.0
+    repository: https://prometheus-community.github.io/helm-charts

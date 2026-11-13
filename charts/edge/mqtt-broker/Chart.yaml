@@ -1,0 +1,10 @@
+apiVersion: v2
+name: edge-mqtt-broker
+description: A Helm chart for Mosquitto MQTT Broker (Edge)
+type: application
+version: 0.1.0
+appVersion: "2.0.0"
+dependencies:
+  - name: mosquitto
+    version: 4.0.0 # Placeholder
+    repository: https://k8s-at-home.com/charts/ # Need to verify reliable source or use bitnami/mosquitto if available, or generic deployment

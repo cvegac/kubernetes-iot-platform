@@ -1,0 +1,7 @@
+emqx:
+  replicaCount: 3
+  recreatePods: true
+  emqxConfig:
+    EMQX_ALLOW_ANONYMOUS: "true" # For testing purposes
+  service:
+    type: ClusterIP
