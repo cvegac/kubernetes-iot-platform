@@ -1,0 +1,8 @@
+# Argo CD para laboratorio local: sin SSO, sin notificaciones, UI por port-forward.
+dex:
+  enabled: false
+notifications:
+  enabled: false
+configs:
+  params:
+    server.insecure: true # TLS lo termina el port-forward/ingress; en local evita certificados autofirmados

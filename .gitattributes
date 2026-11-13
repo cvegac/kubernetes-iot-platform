@@ -1,0 +1,4 @@
+# Scripts y manifiestos siempre con LF: con CRLF, bash falla en Linux/CI ("$'\r': command not found").
+* text=auto eol=lf
+*.jpeg binary
+*.png binary
