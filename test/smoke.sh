@@ -110,8 +110,9 @@ registry_points_to_edge() {
 }
 
 # Server-side dry-run: valida contra el schema y las reglas CEL del API server sin persistir nada.
+# El manifiesto va por stdin: con MSYS_NO_PATHCONV, kubectl.exe en Windows no entiende rutas /d/... de Git Bash.
 accepted() {
-  kubectl --context "$CLOUD" apply --dry-run=server -f "$1"
+  kubectl --context "$CLOUD" apply --dry-run=server -f - <"$1"
 }
 
 expected_error() {
@@ -122,7 +123,7 @@ rejected() {
   local file="$1" expect out
   expect="$(expected_error "$file")"
   [ -n "$expect" ] || return 1
-  out="$(kubectl --context "$CLOUD" apply --dry-run=server -f "$file" 2>&1)" && return 1
+  out="$(kubectl --context "$CLOUD" apply --dry-run=server -f - <"$file" 2>&1)" && return 1
   grep -qF -- "$expect" <<<"$out"
 }
 
