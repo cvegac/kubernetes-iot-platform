@@ -47,7 +47,8 @@ jobs:
           kubectl kustomize workloads/mqtt-broker/overlays/cloud > rendered/mqtt-cloud.yaml
           kubectl kustomize workloads/mqtt-broker/overlays/edge > rendered/mqtt-edge.yaml
           kubectl kustomize platform/iot-api > rendered/iot-api.yaml
-          kubeconform -strict -summary \
+          # Los CRDs en sí no tienen schema en kubeconform: los valida el API server en el job e2e.
+          kubeconform -strict -summary -skip CustomResourceDefinition \
             -schema-location default \
             -schema-location '/tmp/schemas/{{ .ResourceKind }}_{{ .ResourceAPIVersion }}.json' \
             -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
