@@ -1,0 +1,81 @@
+# EdgeGateway: un gateway de borde (cluster k3s/kind) que atiende dispositivos MQTT y reenvía al cloud.
+# Hoy es el registro declarativo de la flota; el operador (roadmap) lo va a reconciliar contra Argo CD.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: edgegateways.iot.cvegac.github.io
+spec:
+  group: iot.cvegac.github.io
+  scope: Namespaced
+  names:
+    kind: EdgeGateway
+    listKind: EdgeGatewayList
+    plural: edgegateways
+    singular: edgegateway
+    shortNames: [egw]
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - { name: Cluster, type: string, jsonPath: .spec.cluster }
+        - { name: Hardware, type: string, jsonPath: .spec.hardware }
+        - { name: Arch, type: string, jsonPath: .spec.arch }
+        - { name: Uplink, type: string, jsonPath: .spec.uplink.host }
+        - { name: Age, type: date, jsonPath: .metadata.creationTimestamp }
+      schema:
+        openAPIV3Schema:
+          type: object
+          required: [spec]
+          properties:
+            spec:
+              type: object
+              required: [cluster, hardware, uplink]
+              x-kubernetes-validations:
+                - rule: "self.hardware != 'raspberry-pi' || self.arch == 'arm64'"
+                  message: "a raspberry-pi gateway must be arm64"
+              properties:
+                cluster:
+                  description: Nombre del cluster registrado en Argo CD (Secret con label tier=edge).
+                  type: string
+                  maxLength: 63
+                  pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+                hardware:
+                  description: kind = gateway simulado en local; raspberry-pi y mini-pc = hardware real con k3s.
+                  type: string
+                  enum: [kind, raspberry-pi, mini-pc]
+                arch:
+                  type: string
+                  enum: [amd64, arm64]
+                  default: amd64
+                location:
+                  type: string
+                  maxLength: 63
+                uplink:
+                  description: Broker del cloud al que el gateway reenvía la telemetría (bridge MQTT).
+                  type: object
+                  required: [host]
+                  properties:
+                    host:
+                      type: string
+                      minLength: 1
+                      maxLength: 253
+                    port:
+                      type: integer
+                      minimum: 1
+                      maximum: 65535
+                      default: 1883
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum: [Pending, Connected, Offline]
+                lastSeen:
+                  type: string
+                  format: date-time
+                observedGeneration:
+                  type: integer
+                  format: int64
