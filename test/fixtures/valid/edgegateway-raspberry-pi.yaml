@@ -1,0 +1,14 @@
+# El gateway físico del roadmap: una Raspberry Pi (arm64) con k3s.
+apiVersion: iot.cvegac.github.io/v1alpha1
+kind: EdgeGateway
+metadata:
+  name: fixture-rpi
+  namespace: iot-system
+spec:
+  cluster: rpi-casa
+  hardware: raspberry-pi
+  arch: arm64
+  location: casa
+  uplink:
+    host: mqtt.example.net
+    port: 8883

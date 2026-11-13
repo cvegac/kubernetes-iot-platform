@@ -1,0 +1,6 @@
+# App-of-apps como chart: así la revisión de git es un parámetro (main en uso normal, el SHA del commit en CI).
+apiVersion: v2
+name: platform-apps
+description: Applications y ApplicationSets de Argo CD de la plataforma IoT
+type: application
+version: 0.1.0

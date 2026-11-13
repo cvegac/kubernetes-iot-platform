@@ -1,0 +1,11 @@
+# '+' ocupa un nivel completo: válido.
+apiVersion: iot.cvegac.github.io/v1alpha1
+kind: TopicRoute
+metadata:
+  name: fixture-temperatures
+  namespace: iot-system
+spec:
+  gateway: iot-edge
+  topic: sensors/+/temperature
+  direction: out
+  qos: 1

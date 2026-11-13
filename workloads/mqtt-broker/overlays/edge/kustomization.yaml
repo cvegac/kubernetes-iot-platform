@@ -1,0 +1,11 @@
+# Broker local del gateway: atiende a los dispositivos y reenvía telemetría al cloud.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: mqtt
+resources:
+  - ../../base
+configMapGenerator:
+  - name: mqtt-config
+    behavior: replace
+    files:
+      - mosquitto.conf

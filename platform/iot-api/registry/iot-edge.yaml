@@ -1,0 +1,30 @@
+# Registro de la flota: el gateway simulado (cluster kind iot-edge) y su ruta de telemetría.
+# Refleja lo que hoy hace workloads/mqtt-broker/overlays/edge/mosquitto.conf (topic sensors/# out 1).
+apiVersion: iot.cvegac.github.io/v1alpha1
+kind: EdgeGateway
+metadata:
+  name: iot-edge
+  namespace: iot-system
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  cluster: iot-edge
+  hardware: kind
+  arch: amd64
+  location: local
+  uplink:
+    host: iot-cloud-control-plane
+    port: 31883
+---
+apiVersion: iot.cvegac.github.io/v1alpha1
+kind: TopicRoute
+metadata:
+  name: sensors-telemetry
+  namespace: iot-system
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  gateway: iot-edge
+  topic: sensors/#
+  direction: out
+  qos: 1

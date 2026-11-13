@@ -1,4 +1,0 @@
-# Connectivity configurations
-mqttBridge:
-  enabled: true
-  remoteBrokerUrl: "tcp://cloud-emqx:1883"

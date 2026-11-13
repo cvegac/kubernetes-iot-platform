@@ -1,0 +1,70 @@
+# TopicRoute: qué topics MQTT cruzan entre un EdgeGateway y el cloud, en qué sentido y con qué QoS.
+# Es el contrato que el operador (roadmap) va a traducir a la config del bridge de Mosquitto.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: topicroutes.iot.cvegac.github.io
+spec:
+  group: iot.cvegac.github.io
+  scope: Namespaced
+  names:
+    kind: TopicRoute
+    listKind: TopicRouteList
+    plural: topicroutes
+    singular: topicroute
+    shortNames: [tr]
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - { name: Gateway, type: string, jsonPath: .spec.gateway }
+        - { name: Topic, type: string, jsonPath: .spec.topic }
+        - { name: Direction, type: string, jsonPath: .spec.direction }
+        - { name: QoS, type: integer, jsonPath: .spec.qos }
+        - { name: Age, type: date, jsonPath: .metadata.creationTimestamp }
+      schema:
+        openAPIV3Schema:
+          type: object
+          required: [spec]
+          properties:
+            spec:
+              type: object
+              required: [gateway, topic, direction]
+              x-kubernetes-validations:
+                - rule: "self.direction == 'out' || !self.topic.contains('#')"
+                  message: "routes towards the edge cannot use '#': the gateway would receive all cloud traffic"
+              properties:
+                gateway:
+                  description: Nombre del EdgeGateway (mismo namespace). Inmutable.
+                  type: string
+                  maxLength: 63
+                  pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+                  x-kubernetes-validations:
+                    - rule: "self == oldSelf"
+                      message: "gateway is immutable; create a new TopicRoute instead"
+                topic:
+                  description: Filtro MQTT. '+' ocupa un nivel completo y '#' solo puede ser el último.
+                  type: string
+                  minLength: 1
+                  maxLength: 256
+                  pattern: '^(#|(\+|[^+#/]*)(/(\+|[^+#/]*))*(/#)?)$'
+                direction:
+                  description: out = edge -> cloud (telemetría), in = cloud -> edge (comandos), both.
+                  type: string
+                  enum: [out, in, both]
+                qos:
+                  type: integer
+                  minimum: 0
+                  maximum: 2
+                  default: 1
+            status:
+              type: object
+              properties:
+                applied:
+                  type: boolean
+                observedGeneration:
+                  type: integer
+                  format: int64

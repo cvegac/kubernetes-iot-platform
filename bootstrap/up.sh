@@ -9,10 +9,20 @@ source "${ROOT}/bootstrap/versions.env"
 
 CLOUD="iot-cloud"
 EDGE="iot-edge"
+# Revisión de git que despliega Argo CD. GitOps: lo que no está pusheado a esa revisión, no existe.
+REVISION="${REVISION:-$(git -C "$ROOT" rev-parse --abbrev-ref HEAD)}"
 
-for bin in docker kind kubectl helm; do
+for bin in docker kind kubectl helm git; do
   command -v "$bin" >/dev/null || { echo "Falta '$bin' en el PATH" >&2; exit 1; }
 done
+
+# Desde Kubernetes 1.35 el kubelet no arranca con cgroup v1. Mejor fallar acá con un mensaje claro
+# que a mitad de 'kind create cluster' con un error de kubeadm.
+if [ "$(docker info --format '{{.CgroupVersion}}')" != "2" ]; then
+  echo "Docker usa cgroup v1 y Kubernetes >= 1.35 necesita cgroup v2." >&2
+  echo "WSL2 / Docker Desktop: ver 'Requisitos' en el README (.wslconfig con cgroup_no_v1=all)." >&2
+  exit 1
+fi
 
 create_cluster() {
   local name="$1" config="$2"
@@ -51,6 +61,13 @@ kubectl --context "kind-${CLOUD}" -n argocd create secret generic "cluster-${EDG
   --dry-run=client -o yaml |
   kubectl --context "kind-${CLOUD}" label --local -f - -o yaml \
     argocd.argoproj.io/secret-type=cluster tier=edge |
+  kubectl --context "kind-${CLOUD}" apply -f -
+
+echo "==> App-of-apps en la revisión '${REVISION}' (desde acá Argo CD despliega todo lo demás desde git)"
+patch=$(printf '{"spec":{"source":{"targetRevision":"%s","helm":{"valuesObject":{"revision":"%s"}}}}}' \
+  "$REVISION" "$REVISION")
+kubectl --context "kind-${CLOUD}" patch --local -f "${ROOT}/gitops/argocd/root-app.yaml" \
+  --type merge -p "$patch" -o yaml |
   kubectl --context "kind-${CLOUD}" apply -f -
 
 cat <<EOF
