@@ -6,8 +6,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/cvegac/kubernetes-iot-platform.git
-    targetRevision: feat/multi-cluster # pasa a main al mergear
+    repoURL: {{ .Values.repoURL }}
+    targetRevision: {{ .Values.revision | quote }}
     path: workloads/mqtt-broker/overlays/cloud
   destination:
     server: https://kubernetes.default.svc

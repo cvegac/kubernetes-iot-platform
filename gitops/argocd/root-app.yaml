@@ -1,4 +1,5 @@
-# App-of-apps: Argo CD lee gitops/apps y crea desde ahí todas las demás Applications/ApplicationSets.
+# App-of-apps: Argo CD renderiza el chart gitops/apps y crea desde ahí todas las demás Applications/ApplicationSets.
+# bootstrap/up.sh reemplaza "main" por REVISION (la rama actual por defecto, el SHA del commit en CI).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -8,8 +9,11 @@ spec:
   project: default
   source:
     repoURL: https://github.com/cvegac/kubernetes-iot-platform.git
-    targetRevision: feat/multi-cluster # pasa a main al mergear
+    targetRevision: main
     path: gitops/apps
+    helm:
+      valuesObject:
+        revision: main
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

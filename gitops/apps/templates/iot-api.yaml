@@ -1,0 +1,22 @@
+# API propia de la plataforma (CRDs EdgeGateway/TopicRoute) y el registro de la flota, en el cluster cloud.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: iot-api
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: {{ .Values.repoURL }}
+    targetRevision: {{ .Values.revision | quote }}
+    path: platform/iot-api
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: iot-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

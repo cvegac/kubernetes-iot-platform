@@ -1,0 +1,82 @@
+name: ci
+
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  KIND_VERSION: v0.33.0
+  KUBECONFORM_VERSION: v0.7.0
+
+jobs:
+  lint:
+    name: Manifiestos y scripts
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: shellcheck
+        run: shellcheck -x -P SCRIPTDIR bootstrap/*.sh test/*.sh
+
+      - name: Instalar kubeconform
+        run: |
+          curl -fsSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" |
+            sudo tar -xz -C /usr/local/bin kubeconform
+          kubeconform -v
+
+      - name: Schemas JSON de los CRDs propios
+        # Convierte los CRDs del repo a JSON Schema para validar offline los recursos EdgeGateway/TopicRoute.
+        run: |
+          pip install --quiet pyyaml
+          curl -fsSL -o /tmp/openapi2jsonschema.py \
+            "https://raw.githubusercontent.com/yannh/kubeconform/${KUBECONFORM_VERSION}/scripts/openapi2jsonschema.py"
+          mkdir -p /tmp/schemas && cd /tmp/schemas
+          python3 /tmp/openapi2jsonschema.py "$GITHUB_WORKSPACE"/platform/iot-api/crds/*.yaml
+
+      - name: Renderizar y validar
+        run: |
+          mkdir -p rendered
+          helm template platform-apps gitops/apps --set revision="$GITHUB_SHA" > rendered/apps.yaml
+          kubectl kustomize workloads/mqtt-broker/overlays/cloud > rendered/mqtt-cloud.yaml
+          kubectl kustomize workloads/mqtt-broker/overlays/edge > rendered/mqtt-edge.yaml
+          kubectl kustomize platform/iot-api > rendered/iot-api.yaml
+          kubeconform -strict -summary \
+            -schema-location default \
+            -schema-location '/tmp/schemas/{{ .ResourceKind }}_{{ .ResourceAPIVersion }}.json' \
+            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+            rendered/ gitops/argocd/root-app.yaml test/fixtures/valid/
+
+  e2e:
+    name: Plataforma completa en kind (cloud + edge)
+    needs: lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Instalar kind
+        run: |
+          curl -fsSLo kind "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
+          sudo install kind /usr/local/bin/kind
+          kind version
+
+      - name: Bootstrap (Argo CD despliega este commit exacto)
+        run: REVISION="$GITHUB_SHA" bash bootstrap/up.sh
+
+      - name: Smoke test
+        run: bash test/smoke.sh
+
+      - name: Diagnóstico
+        if: failure()
+        run: |
+          kubectl --context kind-iot-cloud -n argocd get applications -o wide || true
+          kubectl --context kind-iot-cloud -n argocd get applications -o yaml | grep -A8 'conditions:' || true
+          kubectl --context kind-iot-cloud get pods -A || true
+          kubectl --context kind-iot-edge get pods -A || true

@@ -1,5 +1,6 @@
 # Un broker por cada gateway edge: cualquier cluster registrado en Argo CD con label tier=edge
 # recibe su Application automáticamente. Sumar un edge = registrar el cluster, nada más.
+# Las plantillas del ApplicationSet van escapadas ({{`{{.name}}`}}) para que Helm las deje pasar tal cual.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -15,15 +16,15 @@ spec:
             tier: edge
   template:
     metadata:
-      name: "mqtt-{{.name}}"
+      name: 'mqtt-{{`{{.name}}`}}'
     spec:
       project: default
       source:
-        repoURL: https://github.com/cvegac/kubernetes-iot-platform.git
-        targetRevision: feat/multi-cluster # pasa a main al mergear
+        repoURL: {{ .Values.repoURL }}
+        targetRevision: {{ .Values.revision | quote }}
         path: workloads/mqtt-broker/overlays/edge
       destination:
-        server: "{{.server}}"
+        server: '{{`{{.server}}`}}'
         namespace: mqtt
       syncPolicy:
         automated:

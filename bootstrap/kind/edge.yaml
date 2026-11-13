@@ -2,13 +2,6 @@
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 name: iot-edge
-# Docker Desktop sobre WSL2 con kernel 5.15 usa cgroup v1, y desde Kubernetes 1.35 el kubelet no arranca ahí por
-# defecto. Esto lo permite en local; en Linux con cgroup v2 (CI, Raspberry con k3s) no tiene efecto.
-# Arreglo de fondo: 'wsl --update' + cgroup v2 en .wslconfig.
-kubeadmConfigPatches:
-  - |
-    kind: KubeletConfiguration
-    failCgroupV1: false
 nodes:
   - role: control-plane
     labels:

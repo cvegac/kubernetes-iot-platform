@@ -1,0 +1,3 @@
+repoURL: https://github.com/cvegac/kubernetes-iot-platform.git
+# Rama, tag o SHA que despliegan todas las apps. bootstrap/up.sh lo sobrescribe con REVISION.
+revision: main
